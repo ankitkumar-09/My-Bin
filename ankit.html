@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>URGENT: SYSTEM OVERLOAD ⚠️</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+    @keyframes glitch {
+        0% { transform: translate(0) }
+        20% { transform: translate(-5px, 5px) }
+        40% { transform: translate(-5px, -5px) }
+        60% { transform: translate(5px, 5px) }
+        80% { transform: translate(5px, -5px) }
+        100% { transform: translate(0) }
+    }
+    .glitch-mode { animation: glitch 0.1s infinite; }
+    
+    .floating-card {
+        position: fixed;
+        padding: 20px;
+        background: white;
+        color: black;
+        border: 4px solid black;
+        box-shadow: 8px 8px 0px #ff00ff;
+        z-index: 100;
+        pointer-events: none;
+    }
+
+    @keyframes rotate-bg {
+        from { filter: hue-rotate(0deg); }
+        to { filter: hue-rotate(360deg); }
+    }
+    .party-hard { animation: rotate-bg 0.5s linear infinite; }
+
+    #runBtn {
+        transition: all 0.15s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    }
+</style>
+</head>
+<body class="bg-zinc-900 text-white overflow-hidden select-none">
+
+<div class="hidden">
+    <iframe id="player" src="https://www.youtube.com/embed/Fm_LYvbh3pU?autoplay=1&loop=1&playlist=Fm_LYvbh3pU" allow="autoplay"></iframe>
+</div>
+
+<section id="screen1" class="h-screen w-screen flex flex-col items-center justify-center relative">
+    <div id="overlay-text" class="absolute top-10 text-pink-500 font-mono text-xl animate-pulse text-center">
+        CRITICAL ERROR: BIRTHDAY_NOT_FOUND<br>Please authorize Tanishka.exe
+    </div>
+
+    <h1 id="status" class="text-4xl md:text-7xl font-black mb-8 transition-transform">
+        READY? 🏁
+    </h1>
+
+    <button id="runBtn" class="bg-white text-black px-12 py-6 rounded-none border-4 border-pink-500 font-bold text-2xl z-[999] shadow-[10px_10px_0px_#ec4899]">
+        ENTER HERE
+    </button>
+</section>
+
+<section id="screen2" class="hidden min-h-screen w-screen bg-white text-black py-20 px-6 overflow-y-auto z-[1000] relative">
+    <div class="max-w-3xl mx-auto text-center">
+        <h1 class="text-8xl md:text-9xl font-black mb-10 tracking-tighter italic">HAPPY BIRTHDAY TANISHKA!</h1>
+        
+        <div class="space-y-12 text-2xl font-medium leading-tight text-left">
+            <p class="bg-yellow-300 p-4 inline-block">I didn't forget. I just wanted to make you work for it.</p>
+            
+            <p>You’re not just a friend; you’re the person who makes the "random talks" feel like the most important part of the day.</p>
+            
+            <div class="border-8 border-black p-10 rotate-2">
+                <h2 class="text-4xl font-black mb-4">THE PLAYLIST VIBE 🎧</h2>
+                <p>Our Spotify connection is scary. We’re basically the same person when it comes to music. Same loops, same skips, same "oh my god you know this song?!" moments.</p>
+            </div>
+
+            <p>You’ve stayed by me, checked on me, and handled my chaos with so much grace. That’s rare. <b>You are rare.</b></p>
+
+            <p class="text-5xl font-black text-center pt-20 animate-bounce">
+                GO BE ICONIC TODAY. ✨
+            </p>
+        </div>
+    </div>
+</section>
+
+<script>
+const btn = document.getElementById("runBtn");
+const status = document.getElementById("status");
+const screen1 = document.getElementById("screen1");
+let score = 0;
+
+const moveBtn = () => {
+    score++;
+    
+    // Random Position
+    const x = Math.random() * (window.innerWidth - 200);
+    const y = Math.random() * (window.innerHeight - 100);
+    btn.style.position = 'fixed';
+    btn.style.left = x + 'px';
+    btn.style.top = y + 'px';
+
+    // Effects based on "Difficulty"
+    if(score === 2) {
+        status.innerText = "TOO SLOW LOL";
+        status.classList.add('scale-150', 'text-yellow-400');
+    }
+    
+    if(score === 4) {
+        document.body.classList.add('glitch-mode');
+        status.innerText = "SYSTEM MALFUNCTION";
+        spawnFakeWindow("ERROR: USER_IS_TOO_SLOW");
+    }
+
+    if(score === 7) {
+        status.innerText = "CATCH ME IF YOU CAN";
+        screen1.style.transform = "rotate(10deg)";
+        spawnFakeWindow("VIRUS DETECTED: 'Friendship.vbs'");
+    }
+
+    if(score === 10) {
+        btn.innerText = "CLICK ME NOW!";
+        btn.style.transform = "scale(0.5)";
+        status.innerText = "FINAL LEVEL";
+    }
+
+    if(score >= 12) {
+        revealCelebration();
+    }
+};
+
+function spawnFakeWindow(text) {
+    const win = document.createElement('div');
+    win.className = 'floating-card';
+    win.style.left = Math.random() * 70 + '%';
+    win.style.top = Math.random() * 70 + '%';
+    win.innerHTML = `<b>⚠️ Alert</b><br>${text}`;
+    document.body.appendChild(win);
+    setTimeout(() => win.remove(), 2000);
+}
+
+function revealCelebration() {
+    document.body.classList.remove('glitch-mode');
+    document.body.classList.add('party-hard');
+    document.getElementById('screen1').style.display = 'none';
+    document.getElementById('screen2').classList.remove('hidden');
+    
+    // Infinite Confetti
+    setInterval(() => {
+        const c = document.createElement('div');
+        c.style.position = 'fixed';
+        c.style.left = Math.random() * 100 + 'vw';
+        c.style.top = '-20px';
+        c.style.width = '20px';
+        c.style.height = '20px';
+        c.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+        c.style.zIndex = '9999';
+        c.style.transition = 'transform 2s linear';
+        document.body.appendChild(c);
+        setTimeout(() => {
+            c.style.transform = `translate(${Math.random() * 200 - 100}px, 110vh) rotate(720deg)`;
+        }, 10);
+        setTimeout(() => c.remove(), 2000);
+    }, 30);
+}
+
+btn.addEventListener("mouseover", moveBtn);
+btn.addEventListener("click", moveBtn);
+btn.addEventListener("touchstart", (e) => { e.preventDefault(); moveBtn(); });
+
+</script>
+</body>
+</html>

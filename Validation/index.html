@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Form</title>
+</head>
+<body>
+
+<h2>Student Registration Form</h2>
+
+<form enctype="multipart/form-data" onsubmit="return checkPass()">
+    <table >
+        
+        <tr>
+            <td>Student ID</td>
+            <td>
+                <input type="text" name="studentId" required 
+                       pattern="[0-9]{8}" 
+                       title="Student ID must be exactly 8 digits">
+            </td>
+        </tr>
+
+        <tr>
+            <td>Email</td>
+            <td><input type="email" name="email" required></td>
+        </tr>
+
+        <tr>
+            <td>Mobile Number</td>
+            <td>
+                <input type="text" name="mobile" required 
+                       pattern="[0-9]{10}" 
+                       title="Mobile number must be 10 digits">
+            </td>
+        </tr>
+
+        <tr>
+            <td>Password</td>
+            <td><input type="password" id="password" required></td>
+        </tr>
+
+        <tr>
+            <td>Confirm Password</td>
+            <td>
+                <input type="password" id="confirmPassword" required>
+                <span id="error"></span>
+            </td>
+        </tr>
+
+        <tr>
+            <td>Upload File</td>
+            <td><input type="file" name="file"></td>
+        </tr>
+
+        <tr>
+            <td colspan="2">
+                <input type="submit" value="Submit">
+            </td>
+        </tr>
+
+    </table>
+</form>
+
+<script>
+function checkPass() {
+    let pass = document.getElementById("password").value;
+    let cPass = document.getElementById("confirmPassword").value;
+
+    if (pass !== cPass) {
+        alert("Password Not Matched");
+        console.log("password nmismatch");
+        return false; 
+    }
+
+return true;
+}
+</script>
+
+</body>
+</html>

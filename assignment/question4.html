@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pseudo-class and Pseudo-element Demo</title>
+
+    <style>
+        a:hover {
+            color: red;
+        }
+
+        input:focus {
+            border: 2px solid rgb(231, 123, 8);
+            background-color: #f0f8ff;
+        }
+
+        p::first-letter {
+            font-size: 40px;
+            color: darkgreen;
+            font-weight: bold;
+        }
+
+        p::first-line {
+            color: rgb(255, 4, 255);
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+        }
+
+        a {
+            text-decoration: none;
+            font-size: 20px;
+        }
+
+        input {
+            padding: 8px;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+    </style>
+
+</head>
+<body>
+
+    <h2>Pseudo-class and Pseudo-element Example</h2>
+
+    <a href="#">Hover over this link</a>
+
+    <br><br>
+
+    <input type="text" placeholder="Click here and type something">
+
+    <br><br>
+
+    <p>
+        Cascading Style Sheets allow developers to apply styles to HTML elements.
+        Pseudo-classes and pseudo-elements help in styling specific states 
+        or specific parts of an element without modifying the HTML structure.
+    </p>
+
+</body>
+</html>

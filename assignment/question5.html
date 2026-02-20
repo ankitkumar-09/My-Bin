@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Background Properties Demo</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        .color {
+            height: 200px;
+            background-color: lightblue;
+            text-align: center;
+            line-height: 200px;
+            font-size: 20px;
+        }
+
+        .image {
+            height: 300px;
+            background-image: url("image.png");
+            text-align: center;
+            line-height: 300px;
+            color: white;
+            font-size: 20px;
+        }
+
+        .repeat {
+            height: 250px;
+            background-image: url("image.png");
+            background-repeat: repeat-x;
+            text-align: center;
+            line-height: 250px;
+        }
+
+        .position {
+            height: 300px;
+            background-image: url("image.png");
+            background-repeat: no-repeat;
+            background-position: right bottom;
+            text-align: center;
+            line-height: 300px;
+        }
+
+        .size {
+            height: 400px;
+            background-image: url("image.png");
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: cover;
+            color: white;
+            text-align: center;
+            line-height: 400px;
+            font-size: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="color">
+        Example of background-color
+    </div>
+
+    <div class="image">
+        Example of background-image
+    </div>
+
+    <div class="repeat">
+        Example of background-repeat
+    </div>
+
+    <div class="position">
+        Example of background-position
+    </div>
+
+    <div class="size">
+        Example of background-size
+    </div>
+
+</body>
+</html>

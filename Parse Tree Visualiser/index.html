@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LL(1) Parser Generator & Visualizer</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#080c18;--bg2:#0d1221;--bg3:#111827;--bg4:#1e293b;
+  --border:#1e293b;--border2:#334155;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#475569;
+  --indigo:#6366f1;--violet:#8b5cf6;--cyan:#06b6d4;
+  --green:#10b981;--amber:#f59e0b;--red:#ef4444;--pink:#ec4899;--orange:#f97316;
+}
+body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;height:100vh;display:flex;flex-direction:column;overflow:hidden;font-size:13px;}
+header{display:flex;align-items:center;gap:10px;padding:9px 18px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;}
+header h1{font-size:15px;color:var(--indigo);letter-spacing:1px;font-weight:bold;}
+header .sub{font-size:10px;color:var(--text3);}
+.badge{margin-left:auto;padding:3px 12px;border-radius:20px;font-size:10px;font-weight:bold;background:var(--bg4);color:var(--text2);transition:all .3s;}
+.badge.ok{background:#064e3b;color:#34d399;}
+.badge.err{background:#450a0a;color:#f87171;}
+.badge.warn{background:#451a03;color:#fb923c;}
+.layout{display:flex;flex:1;min-height:0;}
+.panel{display:flex;flex-direction:column;border-right:1px solid var(--border);overflow:hidden;}
+.panel-left{width:290px;flex-shrink:0;}
+.panel-mid{flex:1;min-width:0;}
+.panel-right{width:350px;flex-shrink:0;border-right:none;}
+.panel-header{padding:7px 12px;background:var(--bg2);border-bottom:1px solid var(--border);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.panel-body{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.tabs{display:flex;gap:1px;background:var(--bg);flex-shrink:0;}
+.tab{padding:6px 12px;font-size:10px;cursor:pointer;color:var(--text3);border-bottom:2px solid transparent;transition:all .15s;font-family:inherit;white-space:nowrap;}
+.tab:hover{color:var(--text2);}
+.tab.active{color:var(--indigo);border-bottom-color:var(--indigo);}
+.tab-content{display:none;flex:1;overflow:auto;padding:10px;flex-direction:column;gap:8px;}
+.tab-content.active{display:flex;}
+textarea,input[type=text]{background:var(--bg3);border:1px solid var(--border2);color:var(--text);border-radius:6px;font-family:'Courier New',monospace;font-size:12px;outline:none;padding:8px;width:100%;}
+textarea{resize:vertical;}
+textarea:focus,input[type=text]:focus{border-color:var(--indigo);}
+label{font-size:10px;color:var(--text3);margin-bottom:4px;display:block;text-transform:uppercase;letter-spacing:.5px;}
+.btn{padding:7px 14px;border:none;border-radius:6px;cursor:pointer;font-family:'Courier New',monospace;font-size:12px;font-weight:bold;transition:all .2s;}
+.btn-primary{background:var(--indigo);color:#fff;}
+.btn-primary:hover{background:#4f46e5;}
+.btn-sm{padding:3px 9px;font-size:10px;border-radius:4px;}
+.btn-secondary{background:var(--bg4);color:var(--text2);}
+.btn-secondary:hover{background:var(--border2);color:var(--text);}
+.btn-green{background:#065f46;color:#34d399;}
+.btn-row{display:flex;gap:6px;flex-wrap:wrap;}
+.card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;}
+.card-title{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.set-row{display:flex;align-items:flex-start;gap:6px;margin-bottom:6px;font-size:11px;flex-wrap:wrap;}
+.set-nt{color:var(--indigo);font-weight:bold;min-width:54px;}
+.set-vals{display:flex;flex-wrap:wrap;gap:3px;}
+.set-tag{padding:1px 7px;border-radius:10px;font-size:10px;font-weight:bold;}
+.tag-term{background:#1e3a5f;color:#7dd3fc;}
+.tag-eps{background:#1a1a2e;color:#a78bfa;}
+.tag-dollar{background:#1c1917;color:#d97706;}
+.parse-table-wrap{overflow:auto;}
+table.parse-table{border-collapse:collapse;font-size:10px;white-space:nowrap;}
+table.parse-table th,table.parse-table td{padding:5px 10px;border:1px solid var(--border2);text-align:center;}
+table.parse-table th{background:var(--bg4);color:var(--text2);font-weight:bold;}
+table.parse-table td{background:var(--bg3);color:var(--text2);}
+table.parse-table td.has-entry{color:var(--green);background:#0d2318;}
+table.parse-table td.conflict{color:var(--red);background:#1c0505;font-size:9px;}
+table.parse-table tr td:first-child{color:var(--indigo);font-weight:bold;background:var(--bg4);}
+table.trace{border-collapse:collapse;width:100%;font-size:10px;}
+table.trace th{background:var(--bg4);color:var(--text2);padding:5px 8px;text-align:left;border:1px solid var(--border2);position:sticky;top:0;z-index:1;}
+table.trace td{padding:4px 8px;border:1px solid var(--border2);color:var(--text2);vertical-align:top;font-family:'Courier New',monospace;font-size:10px;}
+table.trace tr:hover td{background:var(--bg4);}
+table.trace td.act-match{color:var(--green);}
+table.trace td.act-apply{color:var(--cyan);}
+table.trace td.act-err{color:var(--red);}
+table.trace td.act-accept{color:var(--amber);font-weight:bold;}
+table.trace tr.active-step td{background:#1e1b4b;}
+.tree-container{flex:1;overflow:hidden;position:relative;background:var(--bg);border-radius:8px;border:1px solid var(--border);min-height:200px;display:flex;}
+.tree-container::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,var(--border) 1px,transparent 1px);background-size:26px 26px;pointer-events:none;border-radius:8px;}
+#treeSvg{position:absolute;top:0;left:0;cursor:grab;}
+#treeSvg.dragging{cursor:grabbing;}
+.step-ctrl{display:flex;align-items:center;gap:5px;padding:6px 10px;background:var(--bg2);border-top:1px solid var(--border);flex-shrink:0;}
+.step-info{font-size:10px;color:var(--text3);margin-left:auto;}
+.msg-box{border-radius:6px;padding:8px 12px;font-size:11px;margin-bottom:4px;line-height:1.6;}
+.msg-success{background:#0d2318;border:1px solid #065f46;color:#34d399;}
+.msg-error{background:#1c0505;border:1px solid #450a0a;color:#f87171;}
+.msg-warn{background:#1c1000;border:1px solid #451a03;color:#fb923c;}
+.msg-info{background:#0f172a;border:1px solid #1e3a5f;color:#7dd3fc;}
+.lr-tag{display:inline-block;padding:2px 6px;background:#450a0a;color:#f87171;border-radius:4px;font-size:10px;margin:1px;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:120px;gap:8px;color:var(--text3);font-size:11px;}
+.empty-icon{font-size:28px;}
+.prod-row{font-size:11px;padding:3px 0;color:var(--text2);display:flex;gap:8px;align-items:center;}
+.pnum{color:var(--text3);min-width:28px;font-size:10px;}
+.validation-item{font-size:11px;padding:3px 0;display:flex;gap:6px;align-items:flex-start;}
+footer{padding:4px 16px;background:var(--bg2);border-top:1px solid var(--border);font-size:10px;color:var(--text3);display:flex;gap:14px;flex-shrink:0;flex-wrap:wrap;}
+footer b{color:var(--indigo);}
+.conflict-detail{font-size:10px;color:var(--text3);margin-top:3px;padding:4px 8px;background:var(--bg4);border-radius:4px;border-left:2px solid var(--red);}
+</style>
+</head>
+<body>
+
+<header>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+    <circle cx="12" cy="3" r="2.5" fill="#6366f1"/>
+    <circle cx="4" cy="18" r="2.5" fill="#8b5cf6"/>
+    <circle cx="20" cy="18" r="2.5" fill="#8b5cf6"/>
+    <circle cx="12" cy="12" r="2" fill="#06b6d4"/>
+    <line x1="12" y1="5.5" x2="12" y2="10" stroke="#4f46e5" stroke-width="1.5"/>
+    <line x1="12" y1="14" x2="5" y2="16.5" stroke="#4f46e5" stroke-width="1.5"/>
+    <line x1="12" y1="14" x2="19" y2="16.5" stroke="#4f46e5" stroke-width="1.5"/>
+  </svg>
+  <h1>LL(1) Parser</h1>
+  <span class="sub">Generator & Visualizer — Team Intuition</span>
+  <span class="badge" id="statusBadge">Ready</span>
+</header>
+
+<div class="layout">
+
+  <!-- LEFT -->
+  <div class="panel panel-left">
+    <div class="panel-header"><div class="dot" style="background:#6366f1"></div>Grammar Input</div>
+    <div class="panel-body">
+      <div>
+        <label>Context-Free Grammar</label>
+        <textarea id="grammarInput" rows="9" placeholder="E -> T E'&#10;E' -> + T E' | ε&#10;T -> F T'&#10;T' -> * F T' | ε&#10;F -> ( E ) | id">E -> T E'
+E' -> + T E' | ε
+T -> F T'
+T' -> * F T' | ε
+F -> ( E ) | id</textarea>
+      </div>
+      <div>
+        <label>Input String <span style="color:var(--text3)">(space-separated tokens)</span></label>
+        <input type="text" id="inputString" value="id + id * id" placeholder="e.g. id + id * id">
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="generate()" style="flex:1">▶ Generate</button>
+        <button class="btn btn-secondary btn-sm" onclick="loadExample('expr')">Expr</button>
+        <button class="btn btn-secondary btn-sm" onclick="loadExample('ab')">A→aA</button>
+        <button class="btn btn-secondary btn-sm" onclick="clearAll()">Clear</button>
+      </div>
+
+      <!-- Grammar Summary -->
+      <div class="card" id="grammarInfo" style="display:none">
+        <div class="card-title"><div class="dot" style="background:#06b6d4"></div>Grammar Summary</div>
+        <div id="grammarInfoContent" style="font-size:11px;color:var(--text2);line-height:1.9;"></div>
+      </div>
+
+      <!-- Validation Report -->
+      <div class="card" id="validationCard" style="display:none">
+        <div class="card-title"><div class="dot" style="background:#f59e0b"></div>Validation Report</div>
+        <div id="validationContent"></div>
+      </div>
+
+      <!-- LL(1) Formal Check -->
+      <div class="card" id="ll1CheckCard" style="display:none">
+        <div class="card-title"><div class="dot" style="background:#10b981"></div>LL(1) Formal Check</div>
+        <div id="ll1CheckContent" style="font-size:11px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MIDDLE -->
+  <div class="panel panel-mid">
+    <div class="tabs" id="midTabs">
+      <div class="tab active" onclick="switchTab('mid','first',this)">FIRST Sets</div>
+      <div class="tab" onclick="switchTab('mid','follow',this)">FOLLOW Sets</div>
+      <div class="tab" onclick="switchTab('mid','table',this)">LL(1) Table</div>
+      <div class="tab" onclick="switchTab('mid','productions',this)">Productions</div>
+    </div>
+    <div class="tab-content active" id="mid-first">
+      <div class="empty-state"><div class="empty-icon">Σ</div><span>Generate grammar to see FIRST sets</span></div>
+    </div>
+    <div class="tab-content" id="mid-follow">
+      <div class="empty-state"><div class="empty-icon">Σ</div><span>Generate grammar to see FOLLOW sets</span></div>
+    </div>
+    <div class="tab-content" id="mid-table">
+      <div class="empty-state"><div class="empty-icon">⊞</div><span>Generate grammar to see LL(1) table</span></div>
+    </div>
+    <div class="tab-content" id="mid-productions">
+      <div class="empty-state"><div class="empty-icon">→</div><span>Generate grammar to see productions</span></div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="panel panel-right">
+    <div class="tabs" id="rightTabs">
+      <div class="tab active" onclick="switchTab('right','trace',this)">Stack Trace</div>
+      <div class="tab" onclick="switchTab('right','tree',this)">Parse Tree</div>
+    </div>
+    <div class="tab-content active" id="right-trace">
+      <div class="empty-state" id="traceEmpty"><div class="empty-icon">⚙</div><span>Generate to see parsing trace</span></div>
+      <div id="traceArea" style="display:none;flex:1;min-height:0;flex-direction:column;gap:6px;">
+        <div id="traceMessages"></div>
+        <div style="overflow:auto;flex:1;">
+          <table class="trace" id="traceTable">
+            <thead><tr><th>#</th><th>Stack</th><th>Input</th><th>Action</th></tr></thead>
+            <tbody id="traceBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="tab-content" id="right-tree">
+      <div class="empty-state" id="treeEmpty"><div class="empty-icon">🌳</div><span>Generate to see parse tree</span></div>
+      <div class="tree-container" id="treeContainer" style="display:none;">
+        <svg id="treeSvg"></svg>
+      </div>
+    </div>
+    <div class="step-ctrl">
+      <button class="btn btn-secondary btn-sm" onclick="prevStep()">◀</button>
+      <button class="btn btn-secondary btn-sm" onclick="nextStep()">▶</button>
+      <button class="btn btn-secondary btn-sm" onclick="autoPlay()">Auto</button>
+      <button class="btn btn-secondary btn-sm" onclick="stopAuto()">■</button>
+      <span class="step-info" id="stepInfo">0 / 0</span>
+      <button class="btn btn-green btn-sm" onclick="downloadTree()">↓ JSON</button>
+      <button class="btn btn-secondary btn-sm" onclick="fitTree()">Fit</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span>NTs: <b id="footNT">0</b></span>
+  <span>Terms: <b id="footT">0</b></span>
+  <span>Prods: <b id="footP">0</b></span>
+  <span>Steps: <b id="footS">0</b></span>
+  <span id="footLL1" style="display:none"></span>
+  <span id="footResult" style="display:none"></span>
+</footer>
+
+<script>
+// Safe DOM helper — never throws on null
+function $id(id){ return document.getElementById(id); }
+function $show(id, display){ const el=$id(id); if(el) el.style.display = display||'block'; }
+function $hide(id){ const el=$id(id); if(el) el.style.display='none'; }
+function $html(id, html){ const el=$id(id); if(el) el.innerHTML=html; }
+function $text(id, t){ const el=$id(id); if(el) el.textContent=t; }
+
+const EPS='ε', DOLLAR='$';
+
+// ── 1. PARSE GRAMMAR ─────────────────────────────────────────
+function parseGrammar(text){
+  const productions=new Map(), ntOrder=[], parseErrors=[];
+  const lines=text.trim().split('\n').map(l=>l.trim()).filter(l=>l&&!l.startsWith('//'));
+  if(!lines.length) throw new Error('Grammar is empty.');
+  for(const line of lines){
+    if(!line.includes('->')){ parseErrors.push(`Skipped: "${line}"`); continue; }
+    const arrow=line.indexOf('->');
+    const lhs=line.slice(0,arrow).trim();
+    const rhs=line.slice(arrow+2).trim();
+    if(!lhs||!rhs){ parseErrors.push(`Bad line: "${line}"`); continue; }
+    if(!productions.has(lhs)){ productions.set(lhs,[]); ntOrder.push(lhs); }
+    const alts=rhs.split('|').map(a=>a.trim().split(/\s+/).filter(s=>s).map(s=>
+      ['epsilon','eps','EPSILON'].includes(s)?EPS:s
+    ));
+    for(const alt of alts) productions.get(lhs).push(alt);
+  }
+  if(!productions.size) throw new Error('No valid productions found.');
+  const ntSet=new Set(ntOrder), startSymbol=ntOrder[0];
+  const terminals=new Set();
+  for(const [,alts] of productions)
+    for(const alt of alts)
+      for(const sym of alt)
+        if(!ntSet.has(sym)&&sym!==EPS) terminals.add(sym);
+  return {productions,ntSet,ntOrder,terminals,startSymbol,parseErrors};
+}
+
+// ── 2. VALIDATE GRAMMAR ──────────────────────────────────────
+function validateGrammar(grammar){
+  const {productions,ntSet,terminals,startSymbol}=grammar;
+  const issues=[];
+  // Undefined symbols
+  for(const [A,alts] of productions)
+    for(const alt of alts)
+      for(const sym of alt)
+        if(!ntSet.has(sym)&&!terminals.has(sym)&&sym!==EPS)
+          issues.push({level:'warn',msg:`Symbol '<b>${sym}</b>' in ${A} is undefined.`});
+  // Unreachable
+  const reachable=new Set([startSymbol]);
+  let ch=true;
+  while(ch){ ch=false; for(const nt of reachable) for(const alt of (productions.get(nt)||[])) for(const sym of alt) if(ntSet.has(sym)&&!reachable.has(sym)){reachable.add(sym);ch=true;} }
+  for(const nt of ntSet) if(!reachable.has(nt)) issues.push({level:'warn',msg:`<b>${nt}</b> is unreachable from start symbol.`});
+  // Non-generating
+  const gen=new Set([...terminals,EPS]);
+  let ch2=true;
+  while(ch2){ ch2=false; for(const [A,alts] of productions){ if(gen.has(A)) continue; for(const alt of alts) if(alt.every(s=>gen.has(s))){gen.add(A);ch2=true;break;} } }
+  for(const nt of ntSet) if(!gen.has(nt)) issues.push({level:'error',msg:`<b>${nt}</b> is non-generating (infinite loop / never derives terminal string).`});
+  // Duplicates
+  for(const [A,alts] of productions){ const seen=new Set(); for(const alt of alts){ const k=alt.join(' '); if(seen.has(k)) issues.push({level:'warn',msg:`Duplicate: <b>${A}→${k}</b>`}); seen.add(k); } }
+  return issues;
+}
+
+// ── 3. LEFT RECURSION ────────────────────────────────────────
+function detectLeftRecursion(grammar){
+  const {productions,ntSet}=grammar;
+  const direct=[];
+  for(const [A,alts] of productions) for(const alt of alts) if(alt[0]===A){direct.push(A);break;}
+  const firstNT=new Map();
+  for(const nt of ntSet) firstNT.set(nt,new Set());
+  for(const [A,alts] of productions) for(const alt of alts) if(ntSet.has(alt[0])) firstNT.get(A).add(alt[0]);
+  let ch=true;
+  while(ch){ ch=false; for(const [A,reach] of firstNT){ const before=reach.size; for(const B of [...reach]) for(const C of firstNT.get(B)||[]) reach.add(C); if(reach.size!==before) ch=true; } }
+  const indirect=[];
+  for(const [A,reach] of firstNT) if(!direct.includes(A)&&reach.has(A)) indirect.push(A);
+  return {direct:[...new Set(direct)],indirect:[...new Set(indirect)]};
+}
+
+// ── 4. FIRST SETS ────────────────────────────────────────────
+function computeFirst(grammar){
+  const {productions,ntSet,terminals}=grammar;
+  const first=new Map();
+  for(const t of terminals) first.set(t,new Set([t]));
+  first.set(EPS,new Set([EPS]));
+  for(const nt of ntSet) first.set(nt,new Set());
+  let ch=true;
+  while(ch){
+    ch=false;
+    for(const [A,alts] of productions){
+      for(const alt of alts){
+        const before=first.get(A).size;
+        if(alt.length===1&&alt[0]===EPS){ first.get(A).add(EPS); }
+        else{
+          let allEps=true;
+          for(const sym of alt){
+            const fs=first.get(sym)||new Set([sym]);
+            for(const t of fs) if(t!==EPS) first.get(A).add(t);
+            if(!fs.has(EPS)){allEps=false;break;}
+          }
+          if(allEps) first.get(A).add(EPS);
+        }
+        if(first.get(A).size!==before) ch=true;
+      }
+    }
+  }
+  return first;
+}
+
+function firstOfSeq(seq,first){
+  const res=new Set(); let allEps=true;
+  for(const sym of seq){
+    if(sym===EPS) continue;
+    const fs=first.get(sym)||new Set([sym]);
+    for(const t of fs) if(t!==EPS) res.add(t);
+    if(!fs.has(EPS)){allEps=false;break;}
+  }
+  if(allEps) res.add(EPS);
+  return res;
+}
+
+// ── 5. FOLLOW SETS ───────────────────────────────────────────
+function computeFollow(grammar,first){
+  const {productions,ntSet,startSymbol}=grammar;
+  const follow=new Map();
+  for(const nt of ntSet) follow.set(nt,new Set());
+  follow.get(startSymbol).add(DOLLAR);
+  let ch=true;
+  while(ch){
+    ch=false;
+    for(const [A,alts] of productions){
+      for(const alt of alts){
+        for(let i=0;i<alt.length;i++){
+          const B=alt[i]; if(!ntSet.has(B)) continue;
+          const before=follow.get(B).size;
+          const beta=alt.slice(i+1).filter(s=>s!==EPS);
+          if(beta.length===0){ for(const t of follow.get(A)) follow.get(B).add(t); }
+          else{
+            const fb=firstOfSeq(beta,first);
+            for(const t of fb) if(t!==EPS) follow.get(B).add(t);
+            if(fb.has(EPS)) for(const t of follow.get(A)) follow.get(B).add(t);
+          }
+          if(follow.get(B).size!==before) ch=true;
+        }
+      }
+    }
+  }
+  return follow;
+}
+
+// ── 6. LL(1) TABLE ───────────────────────────────────────────
+function buildTable(grammar,first,follow){
+  const {productions,ntSet}=grammar;
+  const table=new Map();
+  for(const nt of ntSet) table.set(nt,new Map());
+  const conflicts=[];
+  let pIdx=0;
+  const prodNums=new Map();
+  for(const [A,alts] of productions) for(let i=0;i<alts.length;i++) prodNums.set(`${A}|${i}`,++pIdx);
+
+  for(const [A,alts] of productions){
+    alts.forEach((alt,ai)=>{
+      const pNum=prodNums.get(`${A}|${ai}`);
+      const fa=firstOfSeq(alt,first);
+      for(const t of fa){
+        if(t===EPS) continue;
+        const cell=table.get(A).get(t)||[];
+        cell.push({alt,pNum,reason:`FIRST contains '${t}'`});
+        table.get(A).set(t,cell);
+      }
+      if(fa.has(EPS)){
+        for(const t of follow.get(A)){
+          const cell=table.get(A).get(t)||[];
+          cell.push({alt,pNum,reason:`ε in FIRST, '${t}' in FOLLOW(${A})`});
+          table.get(A).set(t,cell);
+        }
+      }
+    });
+  }
+  for(const [A,row] of table)
+    for(const [t,entries] of row)
+      if(entries.length>1) conflicts.push({nt:A,term:t,prods:entries.map(e=>`P${e.pNum}: ${A}→${e.alt.join(' ')} (${e.reason})`)});
+  return {table,conflicts,prodNums};
+}
+
+// ── 7. FORMAL LL(1) CHECK ───────────────────────────────────
+function formalLL1Check(grammar,first,follow){
+  const {productions,ntSet}=grammar;
+  const violations=[];
+  for(const [A,alts] of productions){
+    for(let i=0;i<alts.length;i++){
+      for(let j=i+1;j<alts.length;j++){
+        const fi=firstOfSeq(alts[i],first), fj=firstOfSeq(alts[j],first);
+        const inter=[...fi].filter(x=>x!==EPS&&fj.has(x));
+        if(inter.length) violations.push({rule:'FIRST conflict',detail:`${A}→${alts[i].join(' ')} | ${alts[j].join(' ')}: intersect at {${inter.join(', ')}}`});
+        if(fi.has(EPS)){ const i2=[...fj].filter(x=>follow.get(A)?.has(x)); if(i2.length) violations.push({rule:'ε/FOLLOW',detail:`${A}: ε∈FIRST(${alts[i].join(' ')}), FIRST(${alts[j].join(' ')})∩FOLLOW={${i2.join(', ')}}`}); }
+        if(fj.has(EPS)){ const i3=[...fi].filter(x=>follow.get(A)?.has(x)); if(i3.length) violations.push({rule:'ε/FOLLOW',detail:`${A}: ε∈FIRST(${alts[j].join(' ')}), FIRST(${alts[i].join(' ')})∩FOLLOW={${i3.join(', ')}}`}); }
+      }
+    }
+  }
+  return violations;
+}
+
+// ── 8. VALIDATE INPUT TOKENS ────────────────────────────────
+function validateInput(tokens,grammar){
+  return tokens.filter(t=>t!==DOLLAR&&!grammar.terminals.has(t));
+}
+
+// ── 9. PREDICTIVE PARSE ─────────────────────────────────────
+function predictiveParse(inputTokens,grammar,table,isLL1){
+  if(!isLL1) return {steps:[],accepted:false,error:'Grammar is not LL(1). Deterministic parsing is impossible.',root:null,aborted:true};
+  const {ntSet,startSymbol}=grammar;
+  const tokens=[...inputTokens,DOLLAR];
+  let ip=0, nodeId=0;
+  const mkNode=(name,parent=null)=>({id:nodeId++,name,children:[],parent,isTerminal:false});
+  const root=mkNode(startSymbol);
+  const stack=[{sym:DOLLAR,node:null},{sym:startSymbol,node:root}];
+  const steps=[]; let accepted=false, error=null;
+  const stackStr=()=>stack.map(s=>s.sym).reverse().join(' ');
+  const inputStr=()=>tokens.slice(ip).join(' ');
+
+  while(true){
+    if(!stack.length){steps.push({stack:'',input:inputStr(),action:'ERROR: stack empty',type:'error'});error='Stack underflow';break;}
+    const top=stack[stack.length-1], cur=tokens[ip];
+    if(top.sym===DOLLAR&&cur===DOLLAR){steps.push({stack:stackStr(),input:inputStr(),action:'ACCEPT ✔',type:'accept'});accepted=true;break;}
+    if(!ntSet.has(top.sym)){
+      if(top.sym===cur){
+        steps.push({stack:stackStr(),input:inputStr(),action:`Match '${cur}'`,type:'match'});
+        if(top.node) top.node.isTerminal=true;
+        stack.pop(); ip++;
+      } else {
+        steps.push({stack:stackStr(),input:inputStr(),action:`ERROR: expected '${top.sym}', got '${cur}'`,type:'error'});
+        error=`Expected '${top.sym}', found '${cur}'`; break;
+      }
+      continue;
+    }
+    const entry=table.get(top.sym)?.get(cur);
+    if(!entry||!entry.length){steps.push({stack:stackStr(),input:inputStr(),action:`ERROR: no entry table[${top.sym}][${cur}]`,type:'error'});error=`No rule for [${top.sym}][${cur}]`;break;}
+    const {alt,pNum}=entry[0];
+    steps.push({stack:stackStr(),input:inputStr(),action:`Apply P${pNum}: ${top.sym}→${alt.join(' ')}`,type:'apply'});
+    const parentNode=top.node; stack.pop();
+    if(alt.length===1&&alt[0]===EPS){
+      const ec=mkNode(EPS,parentNode); ec.isTerminal=true; if(parentNode) parentNode.children.push(ec);
+    } else {
+      const children=alt.map(sym=>{const c=mkNode(sym,parentNode);if(parentNode)parentNode.children.push(c);return c;});
+      for(let i=children.length-1;i>=0;i--) stack.push({sym:alt[i],node:children[i]});
+    }
+  }
+  return {steps,accepted,error,root:accepted?root:null,aborted:false};
+}
+
+// ── TREE LAYOUT ──────────────────────────────────────────────
+function layoutTree(root){
+  const NW=84,NH=30,HG=12,VG=50;
+  function size(n){if(!n.children?.length){n.w=NW;return;}n.children.forEach(size);n.w=Math.max(NW,n.children.reduce((s,c)=>s+c.w,0)+HG*(n.children.length-1));}
+  function place(n,x,y){n.x=x;n.y=y;if(!n.children?.length)return;const tot=n.children.reduce((s,c)=>s+c.w,0)+HG*(n.children.length-1);let cx=x-tot/2;n.children.forEach(c=>{place(c,cx+c.w/2,y+NH+VG);cx+=c.w+HG;});}
+  size(root); place(root,root.w/2+40,40);
+  const nodes=[],edges=[];
+  function collect(n){nodes.push(n);n.children?.forEach(c=>{edges.push([n,c]);collect(c);});}
+  collect(root);
+  return{nodes,edges,w:Math.max(...nodes.map(n=>n.x))+NW/2+50,h:Math.max(...nodes.map(n=>n.y))+NH+30};
+}
+
+// ── TREE RENDER ──────────────────────────────────────────────
+let treeData=null,svgPan={x:0,y:0,s:1},svgDrag=false,svgDS={x:0,y:0},svgDP={x:0,y:0};
+
+function renderTreeSvg(root){
+  if(!root) return;
+  const lay=layoutTree(root); treeData=lay;
+  const svg=$id('treeSvg'); if(!svg) return;
+  svg.innerHTML='';
+  svg.setAttribute('width',lay.w); svg.setAttribute('height',lay.h);
+  const defs=document.createElementNS('http://www.w3.org/2000/svg','defs');
+  defs.innerHTML='<marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#1e293b"/></marker>';
+  svg.appendChild(defs);
+  const g=document.createElementNS('http://www.w3.org/2000/svg','g'); g.id='treeG'; svg.appendChild(g);
+  lay.edges.forEach(([a,b])=>{
+    const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+    const my=(a.y+b.y)/2;
+    p.setAttribute('d',`M${a.x},${a.y+15} C${a.x},${my} ${b.x},${my} ${b.x},${b.y-15}`);
+    p.setAttribute('fill','none');p.setAttribute('stroke','#1e293b');p.setAttribute('stroke-width','1.5');p.setAttribute('marker-end','url(#arr)');
+    g.appendChild(p);
+  });
+  lay.nodes.forEach(n=>{
+    const color=n.isTerminal?(n.name===EPS?'#475569':'#10b981'):'#6366f1';
+    const grp=document.createElementNS('http://www.w3.org/2000/svg','g');
+    grp.setAttribute('transform',`translate(${n.x},${n.y})`);
+    const rect=document.createElementNS('http://www.w3.org/2000/svg','rect');
+    rect.setAttribute('x',-36);rect.setAttribute('y',-13);rect.setAttribute('width',72);rect.setAttribute('height',26);rect.setAttribute('rx',5);
+    rect.setAttribute('fill',n.isTerminal?color+'22':'#111827');rect.setAttribute('stroke',color+'88');rect.setAttribute('stroke-width','1.5');
+    grp.appendChild(rect);
+    const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('cx',-24);dot.setAttribute('cy',0);dot.setAttribute('r',3);dot.setAttribute('fill',color);
+    grp.appendChild(dot);
+    const txt=document.createElementNS('http://www.w3.org/2000/svg','text');
+    txt.setAttribute('x',-15);txt.setAttribute('y',4);txt.setAttribute('font-size','10');txt.setAttribute('font-family','Courier New,monospace');
+    txt.setAttribute('fill',color);txt.setAttribute('font-weight',n.isTerminal?'normal':'bold');
+    txt.textContent=n.name.length>7?n.name.slice(0,6)+'…':n.name;
+    grp.appendChild(txt);
+    g.appendChild(grp);
+  });
+  applyTreeTransform(); setTimeout(fitTree,60);
+}
+
+function applyTreeTransform(){
+  const g=$id('treeG'); if(g) g.setAttribute('transform',`translate(${svgPan.x},${svgPan.y}) scale(${svgPan.s})`);
+}
+function fitTree(){
+  if(!treeData) return;
+  const c=$id('treeContainer'); if(!c) return;
+  const W=c.clientWidth-20,H=c.clientHeight-20;
+  if(W<=0||H<=0) return;
+  const s=Math.min(W/treeData.w,H/treeData.h,1.5);
+  svgPan={x:(c.clientWidth-treeData.w*s)/2,y:10,s};
+  applyTreeTransform();
+}
+
+// ── RENDER SETS ──────────────────────────────────────────────
+function renderSets(setMap,ntOrder,containerId){
+  const c=$id(containerId); if(!c) return; c.innerHTML='';
+  for(const nt of ntOrder){
+    const vals=setMap.get(nt)||new Set(), sorted=[...vals].sort();
+    const row=document.createElement('div'); row.className='set-row';
+    row.innerHTML=`<span class="set-nt">${nt}</span><span style="color:var(--text3)">= { </span><span class="set-vals">${sorted.map(v=>v===EPS?'<span class="set-tag tag-eps">ε</span>':v===DOLLAR?'<span class="set-tag tag-dollar">$</span>':`<span class="set-tag tag-term">${v}</span>`).join('')}</span><span style="color:var(--text3)"> }</span>`;
+    c.appendChild(row);
+  }
+}
+
+// ── RENDER TABLE ─────────────────────────────────────────────
+function renderTable(table,grammar,conflicts){
+  const c=$id('mid-table'); if(!c) return; c.innerHTML='';
+  if(conflicts.length){
+    const box=document.createElement('div'); box.className='msg-box msg-error';
+    box.innerHTML=`<b>⚠ NOT LL(1)</b> — ${conflicts.length} conflict(s):<br><br>`+conflicts.map(cf=>`<b>table[${cf.nt}][${cf.term}]</b>:<div class="conflict-detail">${cf.prods.map(p=>`• ${p}`).join('<br>')}</div>`).join('');
+    c.appendChild(box);
+  } else {
+    const box=document.createElement('div'); box.className='msg-box msg-success';
+    box.textContent='✔ Grammar is LL(1). No conflicts.'; c.appendChild(box);
+  }
+  const terms=[...grammar.terminals,DOLLAR], nts=grammar.ntOrder;
+  const wrap=document.createElement('div'); wrap.className='parse-table-wrap';
+  const tbl=document.createElement('table'); tbl.className='parse-table';
+  tbl.innerHTML=`<thead><tr><th>NT \\ T</th>${terms.map(t=>`<th>${t}</th>`).join('')}</tr></thead>`;
+  const tbody=document.createElement('tbody');
+  nts.forEach(nt=>{
+    const tr=document.createElement('tr'); tr.innerHTML=`<td>${nt}</td>`;
+    terms.forEach(t=>{
+      const td=document.createElement('td'), entry=table.get(nt)?.get(t);
+      if(entry?.length){ td.className=entry.length>1?'conflict':'has-entry'; td.innerHTML=entry.map(e=>`P${e.pNum}: ${nt}→${e.alt.join(' ')}`).join('<br>'); }
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody); wrap.appendChild(tbl); c.appendChild(wrap);
+}
+
+// ── RENDER PRODUCTIONS ──────────────────────────────────────
+function renderProductions(grammar,prodNums){
+  const c=$id('mid-productions'); if(!c) return; c.innerHTML='';
+  for(const [A,alts] of grammar.productions){
+    const card=document.createElement('div'); card.className='card';
+    card.innerHTML=`<div class="card-title"><div class="dot" style="background:#6366f1"></div>${A}</div>`;
+    alts.forEach((alt,i)=>{
+      const pNum=prodNums.get(`${A}|${i}`);
+      const row=document.createElement('div'); row.className='prod-row';
+      row.innerHTML=`<span class="pnum">P${pNum}</span><span style="color:var(--indigo)">${A}</span><span style="color:var(--text3)">→</span><span>${alt.map(s=>grammar.ntSet.has(s)?`<span style="color:var(--indigo)">${s}</span>`:s===EPS?`<span style="color:var(--violet)">${s}</span>`:`<span style="color:var(--green)">${s}</span>`).join(' ')}</span>`;
+      card.appendChild(row);
+    });
+    c.appendChild(card);
+  }
+}
+
+// ── RENDER TRACE ─────────────────────────────────────────────
+let parseSteps=[],currentStep=-1,autoTimer=null;
+
+function renderTrace(steps,accepted,error,aborted){
+  parseSteps=steps; currentStep=steps.length-1;
+  $hide('traceEmpty');
+  const area=$id('traceArea'); if(area) area.style.display='flex';
+  const msgs=$id('traceMessages'); if(!msgs) return;
+  if(aborted) msgs.innerHTML='<div class="msg-box msg-error">⛔ Parsing <b>ABORTED</b> — Grammar is not LL(1).</div>';
+  else if(accepted) msgs.innerHTML='<div class="msg-box msg-success">✔ Input string <b>ACCEPTED</b></div>';
+  else msgs.innerHTML=`<div class="msg-box msg-error">✘ Input <b>REJECTED</b> — ${error||'parse error'}</div>`;
+  const tbody=$id('traceBody'); if(!tbody) return; tbody.innerHTML='';
+  steps.forEach((s,i)=>{
+    const cls=s.type==='match'?'act-match':s.type==='accept'?'act-accept':s.type==='error'?'act-err':'act-apply';
+    const tr=document.createElement('tr'); tr.id=`step-${i}`;
+    tr.innerHTML=`<td style="color:var(--text3)">${i+1}</td><td style="color:var(--cyan)">${s.stack}</td><td style="color:var(--text2)">${s.input}</td><td class="${cls}">${s.action}</td>`;
+    tbody.appendChild(tr);
+  });
+  $text('footS',steps.length);
+  $text('stepInfo',`${steps.length} / ${steps.length}`);
+}
+
+function highlightStep(idx){
+  document.querySelectorAll('#traceBody tr').forEach(r=>r.classList.remove('active-step'));
+  const row=$id(`step-${idx}`);
+  if(row){row.classList.add('active-step');row.scrollIntoView({block:'nearest'});}
+  $text('stepInfo',`${idx+1} / ${parseSteps.length}`);
+}
+function prevStep(){if(!parseSteps.length)return;currentStep=Math.max(0,currentStep-1);highlightStep(currentStep);}
+function nextStep(){if(!parseSteps.length)return;currentStep=Math.min(parseSteps.length-1,currentStep+1);highlightStep(currentStep);}
+function autoPlay(){
+  stopAuto();currentStep=0;highlightStep(0);
+  autoTimer=setInterval(()=>{if(currentStep>=parseSteps.length-1){stopAuto();return;}currentStep++;highlightStep(currentStep);},400);
+}
+function stopAuto(){if(autoTimer){clearInterval(autoTimer);autoTimer=null;}}
+
+// ── TABS ─────────────────────────────────────────────────────
+function switchTab(panel,id,el){
+  document.querySelectorAll(`#${panel}Tabs .tab`).forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const tabIds=panel==='mid'?['mid-first','mid-follow','mid-table','mid-productions']:['right-trace','right-tree'];
+  tabIds.forEach(tid=>{const t=$id(tid);if(t)t.classList.remove('active');});
+  const target=$id(`${panel}-${id}`); if(target) target.classList.add('active');
+}
+
+// ── STATUS ───────────────────────────────────────────────────
+function setStatus(txt,type){
+  const b=$id('statusBadge'); if(!b) return;
+  b.textContent=txt; b.className='badge'+(type?' '+type:'');
+}
+
+// ── MAIN GENERATE ────────────────────────────────────────────
+let currentRoot=null;
+
+function generate(){
+  stopAuto();
+  const grammarText=$id('grammarInput')?.value||'';
+  const inputRaw=($id('inputString')?.value||'').trim();
+
+  // Reset UI
+  setStatus('Parsing…','warn');
+  $hide('grammarInfo'); $hide('validationCard'); $hide('ll1CheckCard');
+  $hide('footLL1'); $hide('footResult');
+  const area=$id('traceArea'); if(area) area.style.display='none';
+  $show('traceEmpty','flex'); $html('traceEmpty','<div class="empty-icon">⚙</div><span>Processing…</span>');
+  $hide('treeContainer'); $show('treeEmpty','flex');
+  $html('mid-first','<div class="empty-state"><div class="empty-icon">…</div></div>');
+  $html('mid-follow','<div class="empty-state"><div class="empty-icon">…</div></div>');
+  $html('mid-table','<div class="empty-state"><div class="empty-icon">…</div></div>');
+  $html('mid-productions','<div class="empty-state"><div class="empty-icon">…</div></div>');
+  currentRoot=null;
+
+  try{
+    const grammar=parseGrammar(grammarText);
+    const totalProds=[...grammar.productions.values()].reduce((s,a)=>s+a.length,0);
+
+    // Grammar summary
+    $show('grammarInfo');
+    $html('grammarInfoContent',`Start: <b style="color:var(--indigo)">${grammar.startSymbol}</b><br>NTs: <b style="color:var(--indigo)">${[...grammar.ntSet].join(', ')}</b><br>Terms: <b style="color:var(--green)">${[...grammar.terminals].join(', ')}</b><br>Prods: <b style="color:var(--cyan)">${totalProds}</b>${grammar.parseErrors.length?`<br><span style="color:var(--amber)">⚠ ${grammar.parseErrors.join('; ')}</span>`:''}`);
+    $text('footNT',grammar.ntSet.size); $text('footT',grammar.terminals.size); $text('footP',totalProds);
+
+    // Validation
+    const valIssues=validateGrammar(grammar);
+    const lr=detectLeftRecursion(grammar);
+    const hasLR=lr.direct.length>0||lr.indirect.length>0;
+    $show('validationCard');
+    const valContent=$id('validationContent'); if(valContent){ valContent.innerHTML='';
+      const allIssues=[...valIssues];
+      if(lr.indirect.length) allIssues.unshift({level:'error',msg:`<b>Indirect left recursion</b>: ${lr.indirect.map(x=>`<span class="lr-tag" style="background:#451a03;color:#fb923c">${x}</span>`).join(' ')}`});
+      if(lr.direct.length) allIssues.unshift({level:'error',msg:`<b>Direct left recursion</b>: ${lr.direct.map(x=>`<span class="lr-tag">${x}</span>`).join(' ')}`});
+      if(!allIssues.length) valContent.innerHTML='<div style="color:var(--green);font-size:11px">✔ No structural issues.</div>';
+      else allIssues.forEach(issue=>{ const d=document.createElement('div'); d.className=`msg-box msg-${issue.level==='error'?'error':issue.level==='warn'?'warn':'info'}`; d.innerHTML=(issue.level==='error'?'✘ ':'⚠ ')+issue.msg; valContent.appendChild(d); });
+    }
+
+    // FIRST
+    const first=computeFirst(grammar);
+    const fc=$id('mid-first'); if(fc){fc.innerHTML='';renderSets(first,grammar.ntOrder,'mid-first');}
+
+    // FOLLOW
+    const follow=computeFollow(grammar,first);
+    const flc=$id('mid-follow'); if(flc){flc.innerHTML='';renderSets(follow,grammar.ntOrder,'mid-follow');}
+
+    // Table
+    const {table,conflicts,prodNums}=buildTable(grammar,first,follow);
+    renderTable(table,grammar,conflicts);
+
+    // Productions
+    renderProductions(grammar,prodNums);
+
+    // Formal check
+    const formalV=formalLL1Check(grammar,first,follow);
+    const isLL1=!hasLR&&conflicts.length===0&&formalV.length===0;
+    $show('ll1CheckCard');
+    const ll1c=$id('ll1CheckContent');
+    if(ll1c){
+      if(isLL1) ll1c.innerHTML='<div class="msg-box msg-success">✔ Grammar satisfies all LL(1) conditions:<br>&nbsp;• FIRST(αi)∩FIRST(αj)=∅<br>&nbsp;• If ε∈FIRST(αi) then FIRST(αj)∩FOLLOW(A)=∅<br>&nbsp;• No left recursion</div>';
+      else ll1c.innerHTML=`<div class="msg-box msg-error">✘ <b>NOT LL(1)</b>:<br>${[...formalV.map(v=>`<div class="conflict-detail">• <b>${v.rule}</b>: ${v.detail}</div>`),...conflicts.map(cf=>`<div class="conflict-detail">• Table conflict [${cf.nt}][${cf.term}]</div>`)].join('')}</div>`;
+    }
+    $show('footLL1','inline');
+    $html('footLL1',isLL1?'<span style="color:var(--green)">✔ LL(1)</span>':'<span style="color:var(--red)">✘ Not LL(1)</span>');
+
+    if(!inputRaw){
+      setStatus(isLL1?'LL(1) ✔':'Not LL(1)',isLL1?'ok':'err');
+      $show('traceEmpty','flex'); $html('traceEmpty','<div class="empty-icon">⚙</div><span>Enter an input string to parse</span>');
+      return;
+    }
+
+    // Input validation
+    const inputTokens=inputRaw.split(/\s+/).filter(s=>s);
+    const unknowns=validateInput(inputTokens,grammar);
+    if(unknowns.length){
+      $hide('traceEmpty');
+      const area=$id('traceArea'); if(area) area.style.display='flex';
+      $html('traceMessages',`<div class="msg-box msg-error">⚠ Unknown tokens: <b>${unknowns.join(', ')}</b> — not in terminal set.</div>`);
+      $html('traceBody','');
+      setStatus('Invalid Input','err'); return;
+    }
+
+    // Parse
+    const {steps,accepted,error,root,aborted}=predictiveParse(inputTokens,grammar,table,isLL1);
+    currentRoot=root;
+    renderTrace(steps,accepted,error,aborted);
+    $show('footResult','inline');
+    $html('footResult',aborted?'<span style="color:var(--red)">⛔ Aborted</span>':accepted?'<span style="color:var(--green)">✔ Accepted</span>':'<span style="color:var(--red)">✘ Rejected</span>');
+
+    // Parse tree — only on accept
+    if(accepted&&root){
+      $hide('treeEmpty');
+      const tc=$id('treeContainer'); if(tc) tc.style.display='flex';
+      renderTreeSvg(root);
+    } else {
+      $show('treeEmpty','flex');
+      $html('treeEmpty',`<div class="empty-icon">🌳</div><span>${aborted?'Aborted — not LL(1)':'Parse failed — no tree'}</span>`);
+    }
+    setStatus(aborted?'Not LL(1)':accepted?'Accepted ✔':'Rejected ✘',aborted||!accepted?'err':'ok');
+
+  } catch(e){
+    setStatus('Error','err');
+    $show('validationCard');
+    $html('validationContent',`<div class="msg-box msg-error">✘ ${e.message}</div>`);
+    console.error(e);
+  }
+}
+
+// ── MISC ─────────────────────────────────────────────────────
+function downloadTree(){
+  if(!currentRoot){alert('No accepted parse tree available.');return;}
+  function toJ(n){return{name:n.name,terminal:!!n.isTerminal,children:(n.children||[]).map(toJ)};}
+  const blob=new Blob([JSON.stringify(toJ(currentRoot),null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='parse-tree.json';a.click();
+}
+
+function clearAll(){
+  ($id('grammarInput')||{}).value='';
+  ($id('inputString')||{}).value='';
+  ['mid-first','mid-follow','mid-table','mid-productions'].forEach((id,i)=>{
+    const icons=['Σ','Σ','⊞','→'],labels=['FIRST Sets','FOLLOW Sets','LL(1) Table','Productions'];
+    $html(id,`<div class="empty-state"><div class="empty-icon">${icons[i]}</div><span>Generate grammar to see ${labels[i]}</span></div>`);
+  });
+  const area=$id('traceArea'); if(area) area.style.display='none';
+  $show('traceEmpty','flex'); $html('traceEmpty','<div class="empty-icon">⚙</div><span>Generate to see parsing trace</span>');
+  $hide('treeContainer'); $show('treeEmpty','flex'); $html('treeEmpty','<div class="empty-icon">🌳</div><span>Generate to see parse tree</span>');
+  $hide('grammarInfo'); $hide('validationCard'); $hide('ll1CheckCard');
+  $hide('footLL1'); $hide('footResult');
+  setStatus('Ready','');
+}
+
+const EXAMPLES={
+  expr:{grammar:"E -> T E'\nE' -> + T E' | ε\nT -> F T'\nT' -> * F T' | ε\nF -> ( E ) | id",input:'id + id * id'},
+  ab:{grammar:'S -> a A\nA -> b A | ε',input:'a b b'}
+};
+function loadExample(k){
+  const ex=EXAMPLES[k]; if(!ex) return;
+  ($id('grammarInput')||{}).value=ex.grammar;
+  ($id('inputString')||{}).value=ex.input;
+  generate();
+}
+
+// ── INIT — all DOM access happens here ───────────────────────
+window.onload=function(){
+  const svg=$id('treeSvg');
+  if(svg){
+    svg.addEventListener('mousedown',function(e){
+      svgDrag=true; svgDS={x:e.clientX,y:e.clientY}; svgDP={...svgPan};
+      svg.classList.add('dragging');
+    });
+    svg.addEventListener('wheel',function(e){
+      e.preventDefault();
+      svgPan.s=Math.min(3,Math.max(0.15,svgPan.s*(e.deltaY>0?0.9:1.1)));
+      applyTreeTransform();
+    },{passive:false});
+  }
+  window.addEventListener('mousemove',function(e){
+    if(!svgDrag) return;
+    svgPan.x=svgDP.x+(e.clientX-svgDS.x); svgPan.y=svgDP.y+(e.clientY-svgDS.y);
+    applyTreeTransform();
+  });
+  window.addEventListener('mouseup',function(){
+    svgDrag=false;
+    const s=$id('treeSvg'); if(s) s.classList.remove('dragging');
+  });
+  generate();
+};
+
+</script>
+</body>
+</html>
